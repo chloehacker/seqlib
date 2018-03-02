@@ -1,12 +1,19 @@
-class Seqlib:
-    def __init__(self, ninds, nsites, arr):
+import numpy as np
+import pandas as pd
+
+class seqlib:
+    def __init__(self, ninds, nsites):
         self.ninds = ninds
         self.nsites = nsites
         self.seqs = self.simulate()
-        self.arr = arr
+    
+    def mutate(self, base):
+        diff = set("ACTG") - set(base)
+        return np.random.choice(list(diff))
         
     def simulate(self):
-        pass
+        ninds = self.ninds
+        nsites = self.nsites
         oseq = np.random.choice(list("ACGT"), size=nsites) 
         arr = np.array([oseq for i in range(ninds)])   
         muts = np.random.binomial(1, 0.1, (ninds, nsites)) 
@@ -18,23 +25,33 @@ class Seqlib:
         arr[missing.astype(bool)] = "N"  
         return arr
     
-    def mutate(base):
-        diff = set("ACTG") - set(base)
-        return np.random.choice(list(diff))
-   
-    def filter_missing(self, arr, maxfreq):   
+    def filter_missing(self, maxfreq):   
+        arr = self.seqs
         freqmissing = np.sum(arr == "N", axis=0) / arr.shape[0]  
         return arr[:, freqmissing <= maxfreq]
     
-    def filter_maf_missing(self,minfreq, maxfreq):     
-        return filter_maf(filter_missing(maxfreq), minfreq)
+    def filter(self, minfreq, maxfreq):  
+        maf = self.filter_maf(self.filter_missing(maxfreq), minfreq)
+        return maf
+    
+    def filter_maf(self, minmaf):
+        freqs = np.sum(arr != arr[0], axis=0) / arr.shape[0]
+        maf = freqs.copy()
+        maf[maf > 0.5] = 1 - maf[maf > 0.5]
+        return arr[:, maf > minmaf]
+    
+    def maf(self):
+        freqs = np.sum(arr != arr[0], axis=0) / arr.shape[0]
+        maf = freqs.copy()
+        maf[maf > 0.5] = 1 - maf[maf > 0.5]
+        return freqs
     
     
-    def calculcate_statistics(arr):
+    def calculcate_statistics(self):
         nd = np.var(arr == arr[0], axis=0).mean() #calculating the mean of the array
         mf = np.mean(np.sum(arr != arr[0], axis=0) / arr.shape[0]) #freq calculated by dividing sum of maf by whole sum
-        inv = np.any(arr != arr[0], axis=0).sum() # sums invariant sites
-        var = arr.shape[1] - inv #subtracts invariant from total
+        inv = np.any(arr != arr[0], axis=0).sum() 
+        var = arr.shape[1] - inv 
         return pd.Series(
             {"mean nucleotide diversity": nd,
              "mean minor allele frequency": mf,
