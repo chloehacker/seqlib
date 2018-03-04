@@ -10,7 +10,7 @@ class seqlib:
         self.seqs = self._simulate()
         
         ## store maf of the full seq array
-        salf.maf = self._get_maf()
+        self.maf = self._get_maf()
     
     def _mutate(self, base):
         # converts a base to another base
